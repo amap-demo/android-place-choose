@@ -4,5 +4,8 @@
 - 阅读[开发指南](http://lbs.amap.com/api/android-sdk/summary/).
 - 工程基于Android 3D地图SDK和搜索SDK实现
 
+## 扫一扫安装##
+![Screenshot]( https://github.com/amap-demo/android-place-choose/tree/master/SearchDemo/apk/1477648070.png)  
+
 ## 功能描述 ##
 基于3D地图SDK和搜索SDK进行封装，通过屏幕中心点经纬度进行逆地理编码搜索和POI搜索。
