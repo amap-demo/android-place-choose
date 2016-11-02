@@ -96,6 +96,9 @@ public class SearchResultAdapter extends BaseAdapter {
         }
 
         public void bindView(int position) {
+            if (position >= data.size())
+                return;
+
             PoiItem poiItem = data.get(position);
 
             textTitle.setText(poiItem.getTitle());

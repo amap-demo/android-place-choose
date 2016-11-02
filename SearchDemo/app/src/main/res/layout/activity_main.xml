@@ -19,15 +19,19 @@
             android:background="@drawable/text_search"
             android:completionThreshold="1"
             android:dropDownVerticalOffset="1.0dip"
+            android:layout_marginLeft="-10dp"
+            android:layout_marginRight="-10dp"
             android:hint="请输入关键字"
             android:textColorHint="#C0C0C0"
             android:imeOptions="actionDone"
             android:inputType="text|textAutoComplete"
             android:maxLength="20"
             android:paddingRight="37.0dip"
+            android:paddingLeft="10.0dip"
             android:singleLine="true"
             android:textColor="#000000"
             android:textSize="16.0sp" />
+
 
         <Button
             android:layout_width="80dp"
