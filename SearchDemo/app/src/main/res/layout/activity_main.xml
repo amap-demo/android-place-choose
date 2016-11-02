@@ -27,7 +27,7 @@
             android:inputType="text|textAutoComplete"
             android:maxLength="20"
             android:paddingRight="37.0dip"
-            android:paddingLeft="10.0dip"
+            android:paddingLeft="20.0dip"
             android:singleLine="true"
             android:textColor="#000000"
             android:textSize="16.0sp" />
