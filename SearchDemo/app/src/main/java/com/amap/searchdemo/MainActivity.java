@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
                 if (!isItemClickAction) {
                     searchLatlonPoint = new LatLonPoint(cameraPosition.target.latitude, cameraPosition.target.longitude);
 
-                    locationMarker.setPosition(cameraPosition.target);
+//                    locationMarker.setPosition(cameraPosition.target);
 
 //                    isInputKeySearch = false;
 
@@ -216,6 +216,14 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
 
             }
         });
+
+        aMap.setOnMapLoadedListener(new AMap.OnMapLoadedListener() {
+            @Override
+            public void onMapLoaded() {
+                addMarkerInScreenCenter(null);
+            }
+        });
+
     }
 
     /**
@@ -288,11 +296,11 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
                 mListener.onLocationChanged(amapLocation);
 
                 LatLng curLatlng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
-                if (locationMarker == null) {
-                    addMarkerInScreenCenter(curLatlng);
-                } else {
-                    locationMarker.setPosition(curLatlng);
-                }
+//                if (locationMarker == null) {
+//                    addMarkerInScreenCenter(curLatlng);
+//                } else {
+//                    locationMarker.setPosition(curLatlng);
+//                }
 
                 aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(curLatlng, 16f));
 
@@ -476,8 +484,8 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     }
 
     private void addMarkerInScreenCenter(LatLng locationLatLng) {
-//        LatLng latLng = aMap.getCameraPosition().target;
-        Point screenPosition = aMap.getProjection().toScreenLocation(locationLatLng);
+        LatLng latLng = aMap.getCameraPosition().target;
+        Point screenPosition = aMap.getProjection().toScreenLocation(latLng);
         locationMarker = aMap.addMarker(new MarkerOptions()
                 .anchor(0.5f,0.5f)
                 .icon(BitmapDescriptorFactory.fromResource(R.drawable.purple_pin)));
