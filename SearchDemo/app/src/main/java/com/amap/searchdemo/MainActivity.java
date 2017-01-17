@@ -17,7 +17,6 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.ListView;
 import android.widget.RadioGroup;
-import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
@@ -36,10 +35,12 @@ import com.amap.api.maps.model.MarkerOptions;
 import com.amap.api.maps.model.MyLocationStyle;
 import com.amap.api.maps.model.animation.Animation;
 import com.amap.api.maps.model.animation.TranslateAnimation;
+import com.amap.api.services.core.AMapException;
 import com.amap.api.services.core.LatLonPoint;
 import com.amap.api.services.core.PoiItem;
 import com.amap.api.services.geocoder.GeocodeResult;
 import com.amap.api.services.geocoder.GeocodeSearch;
+import com.amap.api.services.geocoder.RegeocodeAddress;
 import com.amap.api.services.geocoder.RegeocodeQuery;
 import com.amap.api.services.geocoder.RegeocodeResult;
 import com.amap.api.services.help.Inputtips;
@@ -77,7 +78,8 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     private PoiSearch poiSearch;
     private List<PoiItem> poiItems;// poi数据
 
-    private String searchPoiKey = items[0];
+    private String searchType = items[0];
+    private String searchCity = "";
     private LatLonPoint searchLatlonPoint;
 
     private String keyWord = "";
@@ -89,6 +91,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     private boolean isItemClickAction;
 
     private List<Tip> autoTips;
+    private boolean isfirstinput = true;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -118,23 +121,23 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
         mSegmentedGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
-                searchPoiKey = items[0];
+                searchType = items[0];
                 switch (checkedId) {
                     case R.id.radio0 :
-                        searchPoiKey = items[0];
+                        searchType = items[0];
                         break;
                     case R.id.radio1 :
-                        searchPoiKey = items[1];
+                        searchType = items[1];
                         break;
                     case R.id.radio2 :
-                        searchPoiKey = items[2];
+                        searchType = items[2];
                         break;
                     case R.id.radio3 :
-                        searchPoiKey = items[3];
+                        searchType = items[3];
                         break;
                 }
 
-                geoAddress();
+//                geoAddress();
 
             }
         });
@@ -170,6 +173,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
                 if (autoTips != null && autoTips.size() > position) {
                     Tip tip = autoTips.get(position);
                     searchPoi(tip);
+
                 }
             }
         });
@@ -377,7 +381,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
      */
     protected void doSearchQuery() {
         currentPage = 0;
-        query = new PoiSearch.Query(searchPoiKey, "", "北京");// 第一个参数表示搜索字符串，第二个参数表示poi搜索类型，第三个参数表示poi搜索区域（空字符串代表全国）
+        query = new PoiSearch.Query("", searchType, searchCity);// 第一个参数表示搜索字符串，第二个参数表示poi搜索类型，第三个参数表示poi搜索区域（空字符串代表全国）
         query.setCityLimit(true);
         query.setPageSize(20);
         query.setPageNum(currentPage);
@@ -393,11 +397,12 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     @Override
     public void onRegeocodeSearched(RegeocodeResult result, int rCode) {
         dismissDialog();
-        if (rCode == 1000) {
+        if (rCode == AMapException.CODE_AMAP_SUCCESS) {
             if (result != null && result.getRegeocodeAddress() != null
                     && result.getRegeocodeAddress().getFormatAddress() != null) {
                 String address = result.getRegeocodeAddress().getProvince() + result.getRegeocodeAddress().getCity() + result.getRegeocodeAddress().getDistrict() + result.getRegeocodeAddress().getTownship();
 
+                searchCity = getmyCity(result.getRegeocodeAddress());
                 if (isInputKeySearch) {
                     address = inputSearchKey;
                 }
@@ -424,7 +429,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
 
     @Override
     public void onPoiSearched(PoiResult poiResult, int resultCode) {
-        if (resultCode == 1000) {
+        if (resultCode == AMapException.CODE_AMAP_SUCCESS) {
             if (poiResult != null && poiResult.getQuery() != null) {
                 if (poiResult.getQuery().equals(query)) {
                     poiItems = poiResult.getPois();
@@ -541,7 +546,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     Inputtips.InputtipsListener inputtipsListener = new Inputtips.InputtipsListener() {
         @Override
         public void onGetInputtips(List<Tip> list, int rCode) {
-            if (rCode == 1000) {// 正确返回
+            if (rCode == AMapException.CODE_AMAP_SUCCESS) {// 正确返回
                 autoTips = list;
                 List<String> listString = new ArrayList<String>();
                 for (int i = 0; i < list.size(); i++) {
@@ -552,6 +557,10 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
                         R.layout.route_inputs, listString);
                 searchText.setAdapter(aAdapter);
                 aAdapter.notifyDataSetChanged();
+                if (isfirstinput) {
+                    isfirstinput = false;
+                    searchText.showDropDown();
+                }
             } else {
                 Toast.makeText(MainActivity.this, "erroCode " + rCode , Toast.LENGTH_SHORT).show();
             }
@@ -584,4 +593,19 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
+    private String getmyCity(RegeocodeAddress address){
+        String city = "";
+        if(!IsEmptyOrNullString(address.getCity())){
+            city = address.getCity();
+        } else if(!IsEmptyOrNullString(address.getDistrict())){
+            city = address.getDistrict();
+        } else if(!IsEmptyOrNullString(address.getProvince())){
+            city = address.getProvince();
+        }
+        return city;
+    }
+
+    public static boolean IsEmptyOrNullString(String s) {
+        return (s == null) || (s.trim().length() == 0);
+    }
 }
