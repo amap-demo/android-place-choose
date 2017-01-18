@@ -136,9 +136,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
                         searchType = items[3];
                         break;
                 }
-
-//                geoAddress();
-
+                geoAddress();
             }
         });
 
