@@ -180,7 +180,6 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
         geocoderSearch.setOnGeocodeSearchListener(this);
         progDialog = new ProgressDialog(this);
 
-
         hideSoftKey(searchText);
     }
 
@@ -225,7 +224,6 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
                 addMarkerInScreenCenter(null);
             }
         });
-
     }
 
     /**
@@ -459,8 +457,6 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
             if (position != searchResultAdapter.getSelectedPosition()) {
                 PoiItem poiItem = (PoiItem) searchResultAdapter.getItem(position);
                 LatLng curLatlng = new LatLng(poiItem.getLatLonPoint().getLatitude(), poiItem.getLatLonPoint().getLongitude());
-
-                locationMarker.setPosition(curLatlng);
 
                 isItemClickAction = true;
 
