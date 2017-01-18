@@ -65,7 +65,6 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     private AMapLocationClient mlocationClient;
     private AMapLocationClientOption mLocationOption;
 
-//    private String[] items = {"住宅区-120300", "学校-141200", "楼宇-120200", "商场-060100" };
     private String[] items = {"住宅区", "学校", "楼宇", "商场" };
 
     private Marker locationMarker;
@@ -79,10 +78,9 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     private List<PoiItem> poiItems;// poi数据
 
     private String searchType = items[0];
-    private String searchCity = "";
+    private String searchKey = "";
     private LatLonPoint searchLatlonPoint;
 
-    private String keyWord = "";
 
     private List<PoiItem> resultData;
 
@@ -92,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
 
     private List<Tip> autoTips;
     private boolean isfirstinput = true;
+    private PoiItem firstItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -168,10 +167,10 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
         searchText.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                Log.i("MY", "setOnItemClickListener");
                 if (autoTips != null && autoTips.size() > position) {
                     Tip tip = autoTips.get(position);
                     searchPoi(tip);
-
                 }
             }
         });
@@ -200,21 +199,13 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
 
             @Override
             public void onCameraChangeFinish(CameraPosition cameraPosition) {
-
-                if (!isItemClickAction) {
-                    searchLatlonPoint = new LatLonPoint(cameraPosition.target.latitude, cameraPosition.target.longitude);
-
-//                    locationMarker.setPosition(cameraPosition.target);
-
-//                    isInputKeySearch = false;
-
+                if (!isItemClickAction && !isInputKeySearch) {
                     geoAddress();
-
                     startJumpAnimation();
                 }
-
+                searchLatlonPoint = new LatLonPoint(cameraPosition.target.latitude, cameraPosition.target.longitude);
+                isInputKeySearch = false;
                 isItemClickAction = false;
-
             }
         });
 
@@ -231,19 +222,12 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
      */
     private void setUpMap() {
         aMap.getUiSettings().setZoomControlsEnabled(false);
-
         aMap.setLocationSource(this);// 设置定位监听
         aMap.getUiSettings().setMyLocationButtonEnabled(true);// 设置默认定位按钮是否显示
         aMap.setMyLocationEnabled(true);// 设置为true表示显示定位层并可触发定位，false表示隐藏定位层并不可触发定位，默认是false
         aMap.setMyLocationType(AMap.LOCATION_TYPE_LOCATE);
-//        etupLocationStyle();
     }
 
-    private void etupLocationStyle(){
-        MyLocationStyle myLocationStyle = new MyLocationStyle();
-        myLocationStyle.myLocationIcon(null);
-        aMap.setMyLocationStyle(myLocationStyle);
-    }
     /**
      * 方法必须重写
      */
@@ -251,7 +235,6 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
     protected void onResume() {
         super.onResume();
         mapView.onResume();
-
     }
 
     /**
@@ -290,17 +273,13 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
      */
     @Override
     public void onLocationChanged(AMapLocation amapLocation) {
+//        Log.i("MY", "onLocationChanged");
         if (mListener != null && amapLocation != null) {
             if (amapLocation != null
                     && amapLocation.getErrorCode() == 0) {
                 mListener.onLocationChanged(amapLocation);
 
                 LatLng curLatlng = new LatLng(amapLocation.getLatitude(), amapLocation.getLongitude());
-//                if (locationMarker == null) {
-//                    addMarkerInScreenCenter(curLatlng);
-//                } else {
-//                    locationMarker.setPosition(curLatlng);
-//                }
 
                 aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(curLatlng, 16f));
 
@@ -310,14 +289,9 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
 
                 searchText.setText("");
 
-                geoAddress();
-                // province+city+district+township
-                String address = amapLocation.getProvince() + amapLocation.getCity() + amapLocation.getDistrict();
-
             } else {
                 String errText = "定位失败," + amapLocation.getErrorCode()+ ": " + amapLocation.getErrorInfo();
                 Log.e("AmapErr",errText);
-
             }
         }
     }
@@ -364,7 +338,9 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
      * 响应逆地理编码
      */
     public void geoAddress() {
+//        Log.i("MY", "geoAddress"+ searchLatlonPoint.toString());
         showDialog();
+        searchText.setText("");
         RegeocodeQuery query = new RegeocodeQuery(searchLatlonPoint, 200, GeocodeSearch.AMAP);// 第一个参数表示一个Latlng，第二参数表示范围多少米，第三个参数表示是火系坐标系还是GPS原生坐标系
         geocoderSearch.getFromLocationAsyn(query);
     }
@@ -376,8 +352,9 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
      * 开始进行poi搜索
      */
     protected void doSearchQuery() {
+//        Log.i("MY", "doSearchQuery");
         currentPage = 0;
-        query = new PoiSearch.Query("", searchType, searchCity);// 第一个参数表示搜索字符串，第二个参数表示poi搜索类型，第三个参数表示poi搜索区域（空字符串代表全国）
+        query = new PoiSearch.Query(searchKey, searchType, "");// 第一个参数表示搜索字符串，第二个参数表示poi搜索类型，第三个参数表示poi搜索区域（空字符串代表全国）
         query.setCityLimit(true);
         query.setPageSize(20);
         query.setPageNum(currentPage);
@@ -397,20 +374,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
             if (result != null && result.getRegeocodeAddress() != null
                     && result.getRegeocodeAddress().getFormatAddress() != null) {
                 String address = result.getRegeocodeAddress().getProvince() + result.getRegeocodeAddress().getCity() + result.getRegeocodeAddress().getDistrict() + result.getRegeocodeAddress().getTownship();
-
-                searchCity = getmyCity(result.getRegeocodeAddress());
-                if (isInputKeySearch) {
-                    address = inputSearchKey;
-                }
-
-                PoiItem poiItem = new PoiItem(address, searchLatlonPoint, address, address);
-
-                resultData.clear();
-                searchResultAdapter.setSelectedPosition(0);
-                resultData.add(poiItem);
-
-//                isInputKeySearch = false;
-
+                firstItem = new PoiItem("regeo", searchLatlonPoint, address, address);
                 doSearchQuery();
             }
         } else {
@@ -423,6 +387,11 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
 
     }
 
+    /**
+     * POI搜索结果回调
+     * @param poiResult 搜索结果
+     * @param resultCode 错误码
+     */
     @Override
     public void onPoiSearched(PoiResult poiResult, int resultCode) {
         if (resultCode == AMapException.CODE_AMAP_SUCCESS) {
@@ -430,12 +399,7 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
                 if (poiResult.getQuery().equals(query)) {
                     poiItems = poiResult.getPois();
                     if (poiItems != null && poiItems.size() > 0) {
-
-                        resultData.addAll(poiItems);
-
-                        searchResultAdapter.setData(resultData);
-                        searchResultAdapter.notifyDataSetChanged();
-
+                        updateListview(poiItems);
                     } else {
                         Toast.makeText(MainActivity.this, "无搜索结果", Toast.LENGTH_SHORT).show();
                     }
@@ -445,6 +409,21 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
             }
         }
     }
+
+    /**
+     * 更新列表中的item
+     * @param poiItems
+     */
+    private void updateListview(List<PoiItem> poiItems) {
+        resultData.clear();
+        searchResultAdapter.setSelectedPosition(0);
+        resultData.add(firstItem);
+        resultData.addAll(poiItems);
+
+        searchResultAdapter.setData(resultData);
+        searchResultAdapter.notifyDataSetChanged();
+    }
+
 
     @Override
     public void onPoiItemSearched(PoiItem poiItem, int i) {
@@ -567,39 +546,23 @@ public class MainActivity extends AppCompatActivity implements LocationSource,
         isInputKeySearch = true;
         inputSearchKey = result.getName();//getAddress(); // + result.getRegeocodeAddress().getCity() + result.getRegeocodeAddress().getDistrict() + result.getRegeocodeAddress().getTownship();
         searchLatlonPoint = result.getPoint();
-        PoiItem poiItem = new PoiItem(inputSearchKey, searchLatlonPoint, inputSearchKey, inputSearchKey);
+        firstItem = new PoiItem("tip", searchLatlonPoint, inputSearchKey, result.getAddress());
+        firstItem.setCityName(result.getDistrict());
+        firstItem.setAdName("");
         resultData.clear();
 
         searchResultAdapter.setSelectedPosition(0);
-        resultData.add(poiItem);
 
         aMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(searchLatlonPoint.getLatitude(), searchLatlonPoint.getLongitude()), 16f));
 
         hideSoftKey(searchText);
-
         doSearchQuery();
     }
 
     private void hideSoftKey(View view) {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.showSoftInput(view,InputMethodManager.SHOW_FORCED);
-
         imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
 
-    private String getmyCity(RegeocodeAddress address){
-        String city = "";
-        if(!IsEmptyOrNullString(address.getCity())){
-            city = address.getCity();
-        } else if(!IsEmptyOrNullString(address.getDistrict())){
-            city = address.getDistrict();
-        } else if(!IsEmptyOrNullString(address.getProvince())){
-            city = address.getProvince();
-        }
-        return city;
-    }
-
-    public static boolean IsEmptyOrNullString(String s) {
-        return (s == null) || (s.trim().length() == 0);
-    }
 }
